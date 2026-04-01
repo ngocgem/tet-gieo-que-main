@@ -1,0 +1,474 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 72% 26%;
+    --foreground: 40 60% 90%;
+
+    --card: 36 60% 90%;
+    --card-foreground: 0 40% 20%;
+
+    --popover: 36 60% 90%;
+    --popover-foreground: 0 40% 20%;
+
+    --primary: 51 100% 50%;
+    --primary-foreground: 0 72% 16%;
+
+    --secondary: 0 72% 26%;
+    --secondary-foreground: 40 60% 90%;
+
+    --muted: 0 50% 20%;
+    --muted-foreground: 36 40% 75%;
+
+    --accent: 0 84% 40%;
+    --accent-foreground: 40 60% 90%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 51 80% 50%;
+    --input: 0 50% 30%;
+    --ring: 51 100% 50%;
+
+    --radius: 0.75rem;
+
+    /* Custom Tết tokens */
+    --tet-crimson: 0 72% 26%;
+    --tet-crimson-dark: 0 72% 15%;
+    --tet-crimson-deep: 0 72% 10%;
+    --tet-gold: 51 100% 50%;
+    --tet-gold-dark: 43 96% 40%;
+    --tet-gold-light: 51 100% 65%;
+    --tet-parchment: 36 60% 90%;
+    --tet-parchment-dark: 36 40% 82%;
+    --tet-cream-text: 36 40% 85%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Be Vietnam Pro', sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .tet-gradient {
+    background: 
+      radial-gradient(ellipse at 20% 20%, hsl(0, 72%, 32%) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, hsl(0, 72%, 28%) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, hsl(0, 60%, 22%) 0%, transparent 80%),
+      linear-gradient(180deg, hsl(0, 72%, 30%) 0%, hsl(0, 72%, 16%) 40%, hsl(0, 72%, 10%) 100%);
+  }
+
+  .parchment-bg {
+    background: 
+      url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E"),
+      linear-gradient(135deg, hsl(36, 60%, 93%) 0%, hsl(36, 50%, 87%) 50%, hsl(36, 45%, 84%) 100%);
+  }
+
+  .gold-gradient {
+    background: linear-gradient(135deg, hsl(51, 100%, 55%) 0%, hsl(43, 96%, 42%) 40%, hsl(51, 100%, 50%) 70%, hsl(43, 96%, 45%) 100%);
+  }
+
+  .gold-text {
+    background: linear-gradient(135deg, hsl(51, 100%, 60%) 0%, hsl(43, 96%, 50%) 40%, hsl(51, 100%, 65%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 1px 2px hsl(43, 96%, 40% / 0.5));
+  }
+
+  .gold-border-ornate {
+    border: 2px solid;
+    border-image: linear-gradient(135deg, hsl(51, 100%, 55%), hsl(43, 96%, 42%), hsl(51, 100%, 50%)) 1;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 ease-in-out shadow-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/40 focus-visible:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-tet-gold via-tet-gold-light to-tet-gold text-tet-crimson border border-transparent hover:from-tet-gold-light hover:to-tet-gold shadow-[0_12px_30px_rgba(255,213,91,0.22)];
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground border border-secondary/40 hover:bg-secondary/85 shadow-[0_8px_24px_rgba(15,23,42,0.2)];
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground hover:shadow-md;
+  }
+
+  .glow-gold {
+    box-shadow: 
+      0 0 20px hsl(51, 100%, 50% / 0.3), 
+      0 0 40px hsl(51, 100%, 50% / 0.15),
+      0 0 60px hsl(51, 100%, 50% / 0.05);
+  }
+
+  .glow-gold-intense {
+    box-shadow: 
+      0 0 15px hsl(51, 100%, 50% / 0.4), 
+      0 0 30px hsl(51, 100%, 50% / 0.25),
+      0 0 50px hsl(51, 100%, 50% / 0.1),
+      inset 0 0 15px hsl(51, 100%, 50% / 0.1);
+  }
+
+  .scroll-bg {
+    background: 
+      linear-gradient(180deg, hsl(36, 55%, 85%) 0%, hsl(36, 50%, 88%) 10%, hsl(36, 60%, 92%) 20%, hsl(36, 60%, 92%) 80%, hsl(36, 50%, 88%) 90%, hsl(36, 55%, 85%) 100%);
+    border-top: 4px solid hsl(36, 40%, 70%);
+    border-bottom: 4px solid hsl(36, 40%, 70%);
+    position: relative;
+  }
+
+  .scroll-bg::before,
+  .scroll-bg::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 12px;
+    background: linear-gradient(90deg, 
+      hsl(36, 40%, 72%), hsl(36, 50%, 78%), hsl(36, 40%, 72%), hsl(36, 50%, 78%), hsl(36, 40%, 72%)
+    );
+    border-radius: 50% / 100%;
+  }
+  .scroll-bg::before { top: -8px; }
+  .scroll-bg::after { bottom: -8px; }
+
+  .text-shadow-gold {
+    text-shadow: 0 0 10px hsl(51, 100%, 50% / 0.5), 0 0 20px hsl(51, 100%, 50% / 0.3);
+  }
+
+  .corner-lantern::before,
+  .corner-lantern::after {
+    content: '🏮';
+    position: absolute;
+    font-size: 1.25rem;
+    opacity: 0.6;
+    animation: sway 4s ease-in-out infinite;
+  }
+  .corner-lantern::before { top: 0.5rem; left: 0.5rem; }
+  .corner-lantern::after { top: 0.5rem; right: 0.5rem; animation-delay: 1s; }
+
+  @keyframes shake-effect {
+    0%, 100% { transform: translateX(0) translateY(0) rotate(0deg); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px) translateY(1px) rotate(-2deg); }
+    20%, 40%, 60%, 80% { transform: translateX(2px) translateY(-1px) rotate(2deg); }
+  }
+
+  .animate-shake {
+    animation: shake-effect 0.24s ease-in-out infinite;
+  }
+
+  /* =============================================
+     CSS-ONLY 3D VIETNAMESE FORTUNE JAR (HŨ QUẺ)
+     ============================================= */
+
+  /* Scene wrapper — no overflow:hidden so sticks can protrude upward */
+  .jar-scene {
+    position: relative;
+    width: 160px;
+    height: 300px;
+    margin: 0 auto;
+    filter: drop-shadow(0 20px 32px rgba(0, 0, 0, 0.45));
+  }
+
+  /* === LAYER 1 (z:2): Dark interior at jar mouth === */
+  .jar-interior {
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 106px;
+    height: 30px;
+    background: radial-gradient(ellipse at 50% 45%,
+      #080100 0%, #160602 35%, #281009 65%, #3e1a0c 100%
+    );
+    border-radius: 50%;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* === LAYER 2 (z:3): Sticks slot — allows sticks to protrude freely === */
+  .jar-sticks-slot {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 160px;
+    height: 300px;
+    z-index: 3;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  /* Base style for every stick — centered at 50% of jar-sticks-slot */
+  .jar-stick {
+    position: absolute;
+    left: calc(50% - 15px);  /* 50% - half width (15px) = center */
+    top: -60px;              /* Protrude well above jar mouth */
+    width: 30px;
+    height: 280px;
+    transform-origin: bottom center;
+    pointer-events: none;
+    filter: drop-shadow(1px 0 3px rgba(0, 0, 0, 0.5));
+    display: block;
+  }
+
+  .jar-stick-core,
+  .jar-stick-grain,
+  .jar-stick-cap {
+    position: absolute;
+    display: block;
+    pointer-events: none;
+  }
+
+  .jar-stick-core {
+    inset: 10px 6px 0 6px;
+    border-radius: 3px;
+    background:
+      linear-gradient(
+        to right,
+        #5c3516 0%,
+        #98663b 22%,
+        #d4a56d 50%,
+        #98663b 78%,
+        #5c3516 100%
+      );
+  }
+
+  .jar-stick-grain {
+    inset: 10px 6px 0 6px;
+    border-radius: 3px;
+    background:
+      repeating-linear-gradient(
+        to right,
+        rgba(255, 245, 210, 0.08) 0px,
+        rgba(255, 245, 210, 0.08) 1px,
+        rgba(55, 29, 14, 0.12) 1px,
+        rgba(55, 29, 14, 0.12) 2px
+      );
+  }
+
+  .jar-stick-cap {
+    top: 6px;
+    left: 8px;
+    width: 14px;
+    height: 7px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, #f4cc8a 0%, #b17b42 72%, #6a3d1f 100%);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+  }
+
+  .flying-stick {
+    left: auto;
+    transform-origin: bottom center;
+  }
+
+  /* Fan of 8 sticks spread from -12° to +12° — each has explicit z-index */
+  .jar-stick-1 { transform: rotate(-12deg); z-index: 3; }
+  .jar-stick-2 { transform: rotate(-8deg);  z-index: 3; }
+  .jar-stick-3 { transform: rotate(-5deg);  z-index: 3; }
+  .jar-stick-4 { transform: rotate(-2deg);  z-index: 3; }
+  .jar-stick-5 { transform: rotate(2deg);   z-index: 3; }
+  .jar-stick-6 { transform: rotate(5deg);   z-index: 3; }
+  .jar-stick-7 { transform: rotate(8deg);   z-index: 3; }
+  .jar-stick-8 { transform: rotate(12deg);  z-index: 3; }
+
+  /* === LAYER 3 (z:10): Jar barrel body — OPAQUE, covers stick bottoms === */
+  .jar-body {
+    position: absolute;
+    top: 46px;           /* just below the rim — sticks above this are visible */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 130px;
+    height: 246px;
+    /* Cylindrical wood shading: dark edges → warm amber center */
+    background:
+      repeating-linear-gradient(
+        to right,
+        transparent 0px, transparent 6px,
+        rgba(0, 0, 0, 0.03) 6px, rgba(0, 0, 0, 0.03) 7px
+      ),
+      linear-gradient(
+        to right,
+        #1e0c03 0%,
+        #4a2008 6%,
+        #8c4c1c 14%,
+        #bf7a35 24%,
+        #de9e52 35%,
+        #f0ba6a 46%,
+        #f6c87a 50%,
+        #f0ba6a 54%,
+        #de9e52 65%,
+        #bf7a35 76%,
+        #8c4c1c 86%,
+        #4a2008 94%,
+        #1e0c03 100%
+      );
+    border-radius: 0 0 65px 65px;
+    z-index: 10;
+  }
+
+  .jar-front-engraving {
+    position: absolute;
+    top: 124px;
+    left: 50%;
+    width: 110px;
+    transform: translateX(-50%);
+    z-index: 11;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    font-family: "Playfair Display", serif;
+    font-weight: 700;
+    line-height: 1.15;
+    color: #8f5b2e;
+    text-shadow:
+      0 -1px 0 rgba(255, 226, 168, 0.25),
+      0 1px 0 rgba(74, 38, 18, 0.8),
+      0 2px 2px rgba(42, 19, 9, 0.35);
+    opacity: 0.92;
+    pointer-events: none;
+  }
+
+  .jar-front-engraving span {
+    display: block;
+    font-size: 16px;
+  }
+
+  /* === LAYER 4 (z:11): Decorative shoulder band === */
+  .jar-shoulder-band {
+    position: absolute;
+    top: 42px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 130px;
+    height: 14px;
+    background: linear-gradient(
+      to right,
+      #160804 0%, #3c1a08 8%, #7a3c14 20%,
+      #b06828 32%, #c87830 50%,
+      #b06828 68%, #7a3c14 80%, #3c1a08 92%, #160804 100%
+    );
+    z-index: 11;
+    pointer-events: none;
+  }
+
+  /* === LAYER 5 (z:12): Top rim ellipse (convex lip) === */
+  .jar-rim {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 138px;
+    height: 42px;
+    background: linear-gradient(
+      to right,
+      #1e0c03 0%,
+      #5a2810 8%,
+      #b06830 22%,
+      #dea050 38%,
+      #f8cc72 50%,
+      #dea050 62%,
+      #b06830 78%,
+      #5a2810 92%,
+      #1e0c03 100%
+    );
+    border-radius: 50%;
+    z-index: 12;
+    pointer-events: none;
+  }
+
+  /* === LAYER 6 (z:13): Inner rim shadow for depth === */
+  .jar-rim-shadow {
+    position: absolute;
+    top: 26px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 26px;
+    background: radial-gradient(ellipse at 50% 25%,
+      rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.35) 50%, transparent 78%
+    );
+    border-radius: 50%;
+    z-index: 13;
+    pointer-events: none;
+  }
+
+  .result-stick-shell {
+    position: relative;
+    width: 42px;
+    height: 292px;
+    filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.32));
+  }
+
+  .result-stick-core,
+  .result-stick-grain,
+  .result-stick-cap {
+    position: absolute;
+    display: block;
+    pointer-events: none;
+  }
+
+  .result-stick-core {
+    inset: 14px 8px 0 8px;
+    border-radius: 4px;
+    background:
+      linear-gradient(
+        to right,
+        #5c3516 0%,
+        #98663b 22%,
+        #d4a56d 50%,
+        #98663b 78%,
+        #5c3516 100%
+      );
+  }
+
+  .result-stick-grain {
+    inset: 14px 8px 0 8px;
+    border-radius: 4px;
+    background:
+      repeating-linear-gradient(
+        to right,
+        rgba(255, 245, 210, 0.08) 0px,
+        rgba(255, 245, 210, 0.08) 1px,
+        rgba(55, 29, 14, 0.12) 1px,
+        rgba(55, 29, 14, 0.12) 2px
+      );
+  }
+
+  .result-stick-cap {
+    top: 10px;
+    left: 12px;
+    width: 18px;
+    height: 8px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, #f4cc8a 0%, #b17b42 72%, #6a3d1f 100%);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+  }
+}

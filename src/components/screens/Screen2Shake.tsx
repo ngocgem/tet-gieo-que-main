@@ -379,7 +379,7 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
             Hãy gửi gắm mong muốn, <span className="text-amber-300 font-extrabold">cầm chắc điện thoại</span> và lắc nhẹ để gieo quẻ.
           </p>
           <p className="text-primary text-base mt-2 font-semibold text-shadow-gold">
-            {isShakeArmed ? `Đang gieo quẻ: ${Math.round((shakeProgress / REQUIRED_SHAKE_MS) * 100)}%` : "Bật cảm biến rồi lắc liên tục 5 giây, hoặc chạm giữ hũ 5 giây"}
+            {isShakeArmed ? `Đang gieo quẻ: ${Math.round((shakeProgress / REQUIRED_SHAKE_MS) * 100)}%` : "Bật cảm biến rồi lắc điện thoại liên tục 5 giây, hoặc chạm giữ hũ 5 giây"}
           </p>
           {permissionError && <p className="mt-2 text-sm font-semibold text-red-200">{permissionError}</p>}
         </div>
@@ -504,7 +504,7 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
               : !motionReady
                 ? "Bật cảm biến & bắt đầu lắc"
                 : isShakeArmed
-                  ? "Đã bật cảm biến - Lắc 5 giây hoặc giữ hũ 5 giây"
+                  ? "Đã bật cảm biến - Lắc điện thoại 5 giây hoặc giữ hũ 5 giây"
                   : "Chạm để bật lại cảm biến"}
           </span>
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent" style={{ backgroundSize: "200% 100%" }} />

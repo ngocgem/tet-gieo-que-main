@@ -8,10 +8,28 @@ interface Props {
   onBack: () => void;
 }
 
+// Shared AudioContext created on first user interaction to satisfy mobile autoplay policy
+let sharedCtx: AudioContext | null = null;
+
+const getAudioContext = (): AudioContext | null => {
+  try {
+    if (!sharedCtx || sharedCtx.state === 'closed') {
+      sharedCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    if (sharedCtx.state === 'suspended') {
+      sharedCtx.resume();
+    }
+    return sharedCtx;
+  } catch (e) {
+    return null;
+  }
+};
+
 // Simple bamboo clatter sound using Web Audio API
 const playClatterSound = () => {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = getAudioContext();
+    if (!ctx) return;
     const strikes = 12;
     for (let i = 0; i < strikes; i++) {
       const osc = ctx.createOscillator();
@@ -36,8 +54,6 @@ const playClatterSound = () => {
       osc.start(startTime);
       osc.stop(startTime + 0.08);
     }
-    // Clean up after sounds finish
-    setTimeout(() => ctx.close(), 2000);
   } catch (e) {
     // Audio not supported, silent fallback
   }
@@ -46,7 +62,8 @@ const playClatterSound = () => {
 // Suspense cue when 3 sticks burst out
 const playRevealSuspenseSound = () => {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = getAudioContext();
+    if (!ctx) return;
 
     // Rising drone layer
     const drone = ctx.createOscillator();
@@ -96,8 +113,6 @@ const playRevealSuspenseSound = () => {
     shimmerGain.connect(ctx.destination);
     shimmer.start(ctx.currentTime + 1.08);
     shimmer.stop(ctx.currentTime + 1.48);
-
-    setTimeout(() => ctx.close(), 2200);
   } catch (e) {
     // Audio not supported, silent fallback
   }
@@ -106,7 +121,8 @@ const playRevealSuspenseSound = () => {
 // Three short wooden impact hits when sticks land near jar bottom
 const playLandingImpactSound = () => {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = getAudioContext();
+    if (!ctx) return;
     for (let i = 0; i < 3; i++) {
       const hit = ctx.createOscillator();
       const hitGain = ctx.createGain();
@@ -126,7 +142,6 @@ const playLandingImpactSound = () => {
       hit.start(t);
       hit.stop(t + 0.2);
     }
-    setTimeout(() => ctx.close(), 700);
   } catch (e) {
     // Audio not supported, silent fallback
   }
@@ -161,7 +176,10 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
     shakeTriggered.current = true;
     setHoldShake(false);
     setShaking(true);
-    
+
+    // Unlock AudioContext on mobile (must be called directly inside user gesture)
+    getAudioContext();
+
     // Start clatter loop while the ritual is shaking (tempo ramps up over 5s).
     const startClatterLoop = (intervalMs: number) => {
       stopClatterLoop();

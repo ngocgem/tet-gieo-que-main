@@ -8,64 +8,64 @@ interface Props {
   onBack: () => void;
 }
 
-// Shared AudioContext created on first user interaction to satisfy mobile autoplay policy
+const REQUIRED_SHAKE_MS = 5000;
+const SHAKE_THRESHOLD = 28;
+
 let sharedCtx: AudioContext | null = null;
 
 const getAudioContext = (): AudioContext | null => {
   try {
-    if (!sharedCtx || sharedCtx.state === 'closed') {
+    if (!sharedCtx || sharedCtx.state === "closed") {
       sharedCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
-    if (sharedCtx.state === 'suspended') {
+    if (sharedCtx.state === "suspended") {
       sharedCtx.resume();
     }
     return sharedCtx;
-  } catch (e) {
+  } catch {
     return null;
   }
 };
 
-// Simple bamboo clatter sound using Web Audio API
 const playClatterSound = () => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
+
     const strikes = 12;
     for (let i = 0; i < strikes; i++) {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       const filter = ctx.createBiquadFilter();
-      
-      filter.type = 'bandpass';
+
+      filter.type = "bandpass";
       filter.frequency.value = 800 + Math.random() * 2000;
       filter.Q.value = 2 + Math.random() * 5;
-      
-      osc.type = 'square';
+
+      osc.type = "square";
       osc.frequency.value = 200 + Math.random() * 600;
-      
+
       const startTime = ctx.currentTime + i * 0.06 + Math.random() * 0.03;
       gain.gain.setValueAtTime(0.08 + Math.random() * 0.06, startTime);
       gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.04 + Math.random() * 0.03);
-      
+
       osc.connect(filter);
       filter.connect(gain);
       gain.connect(ctx.destination);
-      
+
       osc.start(startTime);
       osc.stop(startTime + 0.08);
     }
-  } catch (e) {
-    // Audio not supported, silent fallback
+  } catch {
+    // Silent fallback when audio is unavailable.
   }
 };
 
-// Suspense cue when 3 sticks burst out
 const playRevealSuspenseSound = () => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
 
-    // Rising drone layer
     const drone = ctx.createOscillator();
     const droneGain = ctx.createGain();
     const droneFilter = ctx.createBiquadFilter();
@@ -84,7 +84,6 @@ const playRevealSuspenseSound = () => {
     drone.start(ctx.currentTime);
     drone.stop(ctx.currentTime + 1.5);
 
-    // Pulsing heart-beat knocks
     for (let i = 0; i < 4; i++) {
       const pulse = ctx.createOscillator();
       const pulseGain = ctx.createGain();
@@ -100,7 +99,6 @@ const playRevealSuspenseSound = () => {
       pulse.stop(t + 0.18);
     }
 
-    // Small shimmer hit at the end
     const shimmer = ctx.createOscillator();
     const shimmerGain = ctx.createGain();
     shimmer.type = "sine";
@@ -113,16 +111,16 @@ const playRevealSuspenseSound = () => {
     shimmerGain.connect(ctx.destination);
     shimmer.start(ctx.currentTime + 1.08);
     shimmer.stop(ctx.currentTime + 1.48);
-  } catch (e) {
-    // Audio not supported, silent fallback
+  } catch {
+    // Silent fallback when audio is unavailable.
   }
 };
 
-// Three short wooden impact hits when sticks land near jar bottom
 const playLandingImpactSound = () => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
+
     for (let i = 0; i < 3; i++) {
       const hit = ctx.createOscillator();
       const hitGain = ctx.createGain();
@@ -142,8 +140,8 @@ const playLandingImpactSound = () => {
       hit.start(t);
       hit.stop(t + 0.2);
     }
-  } catch (e) {
-    // Audio not supported, silent fallback
+  } catch {
+    // Silent fallback when audio is unavailable.
   }
 };
 
@@ -154,149 +152,147 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
   const [showCards, setShowCards] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
   const [revealFlash, setRevealFlash] = useState(false);
+  const [motionReady, setMotionReady] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [isShakeArmed, setIsShakeArmed] = useState(false);
+  const [shakeProgress, setShakeProgress] = useState(0);
+
   const shakeTriggered = useRef(false);
   const timersRef = useRef<number[]>([]);
-  const clatterLoopRef = useRef<number | null>(null);
+  const shakeProgressRef = useRef(0);
+  const lastClatterAtRef = useRef(0);
 
-  const stopClatterLoop = () => {
-    if (clatterLoopRef.current !== null) {
-      window.clearInterval(clatterLoopRef.current);
-      clatterLoopRef.current = null;
-    }
-  };
-
-  const clearTimers = () => {
+  const clearTimers = useCallback(() => {
     timersRef.current.forEach((timer) => window.clearTimeout(timer));
     timersRef.current = [];
-    stopClatterLoop();
-  };
+  }, []);
 
-  const handleShake = useCallback(() => {
-    if (shaking || shakeTriggered.current) return;
-    shakeTriggered.current = true;
+  const triggerRevealSequence = useCallback(() => {
+    setIsShakeArmed(false);
+    setShaking(false);
     setHoldShake(false);
-    setShaking(true);
-
-    // Unlock AudioContext on mobile (must be called directly inside user gesture)
-    getAudioContext();
-
-    // Start clatter loop while the ritual is shaking (tempo ramps up over 5s).
-    const startClatterLoop = (intervalMs: number) => {
-      stopClatterLoop();
-      clatterLoopRef.current = window.setInterval(() => {
-        playClatterSound();
-      }, intervalMs);
-    };
-
-    playClatterSound();
-    stopClatterLoop();
-    startClatterLoop(760);
-
-    const tempoMidTimer = window.setTimeout(() => startClatterLoop(560), 1800);
-    const tempoHighTimer = window.setTimeout(() => startClatterLoop(380), 3500);
-    const preRevealPulseTimer = window.setTimeout(() => playClatterSound(), 4600);
-    
-    // Vibrate device if supported
-    if (navigator.vibrate) {
-      navigator.vibrate([50, 30, 50, 30, 80, 40, 60, 30, 50]);
-    }
-    
-    // Ritual shake lasts 5 seconds.
-    const revealTimer = window.setTimeout(() => {
-      setShaking(false);
-      stopClatterLoop();
-      playRevealSuspenseSound();
-      setRevealFlash(true);
-      setShowReveal(true);
-    }, 5000);
+    playRevealSuspenseSound();
+    setRevealFlash(true);
+    setShowReveal(true);
 
     const flashOffTimer = window.setTimeout(() => {
       setRevealFlash(false);
-    }, 5220);
+    }, 220);
 
     const landingHitTimer = window.setTimeout(() => {
       playLandingImpactSound();
-    }, 6500);
+    }, 1500);
 
-    // Show book title + author after the sticks complete their up/down burst.
     const cardTimer = window.setTimeout(() => {
       setShowCards(true);
-    }, 7200);
+    }, 2200);
 
-    // Smoothly fade current screen before entering the real result screen.
     const exitTimer = window.setTimeout(() => {
       setIsExiting(true);
-    }, 9900);
+    }, 4900);
 
-    // Keep title/author screen around 3 seconds, then navigate.
-    const nextTimer = window.setTimeout(() => onNext(), 10200);
-    timersRef.current.push(
-      tempoMidTimer,
-      tempoHighTimer,
-      preRevealPulseTimer,
-      revealTimer,
-      flashOffTimer,
-      landingHitTimer,
-      cardTimer,
-      exitTimer,
-      nextTimer,
-    );
-  }, [shaking, onNext]);
+    const nextTimer = window.setTimeout(() => onNext(), 5200);
+    timersRef.current.push(flashOffTimer, landingHitTimer, cardTimer, exitTimer, nextTimer);
+  }, [onNext]);
+
+  const armShakeMode = useCallback(async () => {
+    if (showCards || showReveal || shakeTriggered.current) return;
+
+    setPermissionError(null);
+    getAudioContext();
+
+    if (typeof window === "undefined" || !("DeviceMotionEvent" in window)) {
+      setPermissionError("Thiết bị chưa hỗ trợ cảm biến lắc.");
+      return;
+    }
+
+    if (typeof (DeviceMotionEvent as any).requestPermission === "function") {
+      try {
+        const permission = await (DeviceMotionEvent as any).requestPermission();
+        if (permission !== "granted") {
+          setPermissionError("Bạn cần cấp quyền chuyển động để gieo quẻ bằng cách lắc máy.");
+          return;
+        }
+      } catch {
+        setPermissionError("Không thể bật cảm biến lắc. Hãy thử lại.");
+        return;
+      }
+    }
+
+    setMotionReady(true);
+    setIsShakeArmed(true);
+    setShakeProgress(0);
+    shakeProgressRef.current = 0;
+    lastClatterAtRef.current = 0;
+  }, [showCards, showReveal]);
 
   useEffect(() => {
     return () => clearTimers();
-  }, []);
+  }, [clearTimers]);
 
-  // Real device shake detection
   useEffect(() => {
-    let lastX = 0, lastY = 0, lastZ = 0;
+    if (!motionReady) return;
+
+    let lastX = 0;
+    let lastY = 0;
+    let lastZ = 0;
     let lastTime = Date.now();
-    const SHAKE_THRESHOLD = 25;
 
     const handleMotion = (e: DeviceMotionEvent) => {
+      if (!isShakeArmed || shakeTriggered.current) return;
+
       const acc = e.accelerationIncludingGravity;
       if (!acc || acc.x === null || acc.y === null || acc.z === null) return;
-      
+
       const now = Date.now();
       const timeDiff = now - lastTime;
-      
-      if (timeDiff > 80) {
-        const deltaX = Math.abs(acc.x - lastX);
-        const deltaY = Math.abs(acc.y - lastY);
-        const deltaZ = Math.abs(acc.z - lastZ);
-        
-        const speed = (deltaX + deltaY + deltaZ) / (timeDiff / 1000);
-        
-        if (speed > SHAKE_THRESHOLD) {
-          handleShake();
-        }
-        
-        lastX = acc.x;
-        lastY = acc.y;
-        lastZ = acc.z;
-        lastTime = now;
-      }
-    };
 
-    // Request permission for iOS 13+
-    const requestPermission = async () => {
-      if (typeof (DeviceMotionEvent as any).requestPermission === 'function') {
-        try {
-          const permission = await (DeviceMotionEvent as any).requestPermission();
-          if (permission === 'granted') {
-            window.addEventListener('devicemotion', handleMotion);
+      if (timeDiff <= 80) return;
+
+      const deltaX = Math.abs(acc.x - lastX);
+      const deltaY = Math.abs(acc.y - lastY);
+      const deltaZ = Math.abs(acc.z - lastZ);
+      const speed = (deltaX + deltaY + deltaZ) / (timeDiff / 1000);
+
+      if (speed > SHAKE_THRESHOLD) {
+        setShaking(true);
+
+        const ratio = shakeProgressRef.current / REQUIRED_SHAKE_MS;
+        const clatterInterval = Math.max(300, 760 - ratio * 420);
+        if (now - lastClatterAtRef.current >= clatterInterval) {
+          playClatterSound();
+          lastClatterAtRef.current = now;
+        }
+
+        setShakeProgress((prev) => {
+          const next = Math.min(REQUIRED_SHAKE_MS, prev + timeDiff);
+          shakeProgressRef.current = next;
+
+          if (next >= REQUIRED_SHAKE_MS && !shakeTriggered.current) {
+            shakeTriggered.current = true;
+            triggerRevealSequence();
           }
-        } catch (e) {
-          // Permission denied
-        }
+
+          return next;
+        });
       } else {
-        window.addEventListener('devicemotion', handleMotion);
+        setShaking(false);
+        setShakeProgress((prev) => {
+          const next = Math.max(0, prev - timeDiff * 1.15);
+          shakeProgressRef.current = next;
+          return next;
+        });
       }
+
+      lastX = acc.x;
+      lastY = acc.y;
+      lastZ = acc.z;
+      lastTime = now;
     };
 
-    requestPermission();
-    return () => window.removeEventListener('devicemotion', handleMotion);
-  }, [handleShake]);
+    window.addEventListener("devicemotion", handleMotion);
+    return () => window.removeEventListener("devicemotion", handleMotion);
+  }, [motionReady, isShakeArmed, triggerRevealSequence]);
 
   return (
     <motion.div
@@ -330,8 +326,9 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
             Hãy gửi gắm mong muốn, <span className="text-amber-300 font-extrabold">cầm chắc điện thoại</span> và lắc nhẹ để gieo quẻ.
           </p>
           <p className="text-primary text-base mt-2 font-semibold text-shadow-gold">
-            Lắc hũ trong 5 giây để khai quẻ
+            {isShakeArmed ? `Đang lắc: ${Math.round((shakeProgress / REQUIRED_SHAKE_MS) * 100)}%` : "Bật cảm biến rồi lắc liên tục 5 giây để khai quẻ"}
           </p>
+          {permissionError && <p className="mt-2 text-sm font-semibold text-red-200">{permissionError}</p>}
         </div>
       )}
 
@@ -353,7 +350,7 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
                 y: [0, -8, 5, -3, 3, 0],
               } : {}}
               transition={{ duration: 1.4, ease: "easeInOut" }}
-              onClick={handleShake}
+              onClick={armShakeMode}
               onPointerDown={() => setHoldShake(true)}
               onPointerUp={() => setHoldShake(false)}
               onPointerLeave={() => setHoldShake(false)}
@@ -384,7 +381,6 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
 
         {shaking && <GoldParticles />}
 
-        {/* 3 sticks morphing into book cards */}
         <AnimatePresence>
           {showCards && (
             <motion.div
@@ -395,47 +391,47 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
               style={{ perspective: 900 }}
             >
               <div className="flex w-full max-w-[410px] items-center justify-center gap-3 px-2">
-              {booksData.slice(0, 3).map((book, i) => (
-                <motion.div
-                  key={book.title}
-                  initial={{ opacity: 0, y: -240, rotate: (i - 1) * 20, scale: 0.52 }}
-                  animate={{ opacity: 1, y: [-110, 18, 0, -6, 0], rotate: [(i - 1) * 20, (i - 1) * 4, (i - 1) * 2.5], scale: [0.52, 1.2, 1, 1.02, 1] }}
-                  transition={{
-                    delay: i * 0.1,
-                    duration: 0.9,
-                    ease: "easeOut",
-                    y: { repeat: Infinity, duration: 2.6 + i * 0.3, ease: "easeInOut" },
-                  }}
-                  className="relative w-[120px] h-[292px]"
-                >
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="result-stick-shell">
-                      <span className="result-stick-core" />
-                      <span className="result-stick-grain" />
-                      <span className="result-stick-cap" />
-                    </div>
-                  </div>
+                {booksData.slice(0, 3).map((book, i) => (
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.9, filter: "blur(3px)" }}
-                    animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-                    transition={{ delay: 0.18 + i * 0.22, duration: 0.45, ease: "easeOut" }}
-                    className="absolute inset-x-2 top-[72px] z-10 px-1 text-center"
+                    key={book.title}
+                    initial={{ opacity: 0, y: -240, rotate: (i - 1) * 20, scale: 0.52 }}
+                    animate={{ opacity: 1, y: [-110, 18, 0, -6, 0], rotate: [(i - 1) * 20, (i - 1) * 4, (i - 1) * 2.5], scale: [0.52, 1.2, 1, 1.02, 1] }}
+                    transition={{
+                      delay: i * 0.1,
+                      duration: 0.9,
+                      ease: "easeOut",
+                      y: { repeat: Infinity, duration: 2.6 + i * 0.3, ease: "easeInOut" },
+                    }}
+                    className="relative w-[120px] h-[292px]"
                   >
-                    <p
-                      className="font-display text-[0.84rem] leading-[1.05] font-extrabold break-words text-white"
-                      style={{ textShadow: "0 1px 2px rgba(0,0,0,0.7), 0 3px 8px rgba(0,0,0,0.45)" }}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="result-stick-shell">
+                        <span className="result-stick-core" />
+                        <span className="result-stick-grain" />
+                        <span className="result-stick-cap" />
+                      </div>
+                    </div>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.9, filter: "blur(3px)" }}
+                      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+                      transition={{ delay: 0.18 + i * 0.22, duration: 0.45, ease: "easeOut" }}
+                      className="absolute inset-x-2 top-[72px] z-10 px-1 text-center"
                     >
-                      {book.title}
-                    </p>
-                    <p
-                      className="mt-1 text-[0.58rem] leading-tight font-bold tracking-[0.12em] uppercase break-words text-white/95"
-                      style={{ textShadow: "0 1px 2px rgba(0,0,0,0.7), 0 3px 8px rgba(0,0,0,0.45)" }}
-                    >
-                      {book.author}
-                    </p>
+                      <p
+                        className="font-display text-[0.84rem] leading-[1.05] font-extrabold break-words text-white"
+                        style={{ textShadow: "0 1px 2px rgba(0,0,0,0.7), 0 3px 8px rgba(0,0,0,0.45)" }}
+                      >
+                        {book.title}
+                      </p>
+                      <p
+                        className="mt-1 text-[0.58rem] leading-tight font-bold tracking-[0.12em] uppercase break-words text-white/95"
+                        style={{ textShadow: "0 1px 2px rgba(0,0,0,0.7), 0 3px 8px rgba(0,0,0,0.45)" }}
+                      >
+                        {book.author}
+                      </p>
+                    </motion.div>
                   </motion.div>
-                </motion.div>
-              ))}
+                ))}
               </div>
             </motion.div>
           )}
@@ -444,17 +440,22 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
 
       {!showCards && (
         <motion.button
-          onClick={handleShake}
+          onClick={armShakeMode}
           whileTap={{ scale: 0.92 }}
           className="relative mt-auto mb-3 overflow-hidden rounded-2xl bg-red-600/70 px-10 py-3.5 font-display text-lg font-semibold text-yellow-100 shadow-lg hover:bg-red-600/80"
         >
           <span className="relative z-10">
-            {shaking ? "Đang gieo quẻ..." : "Hoặc chạm hũ để lắc quẻ"}
+            {showReveal || shakeTriggered.current
+              ? "Đang gieo quẻ..."
+              : !motionReady
+                ? "Bật cảm biến & bắt đầu lắc"
+                : isShakeArmed
+                  ? "Đã bật cảm biến - Lắc liên tục 5 giây"
+                  : "Chạm để bật lại cảm biến"}
           </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent" style={{ backgroundSize: '200% 100%' }} />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent" style={{ backgroundSize: "200% 100%" }} />
         </motion.button>
       )}
-
     </motion.div>
   );
 };

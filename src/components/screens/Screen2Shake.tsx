@@ -161,10 +161,15 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
   const timersRef = useRef<number[]>([]);
   const shakeProgressRef = useRef(0);
   const lastClatterAtRef = useRef(0);
+  const holdIntervalRef = useRef<number | null>(null);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach((timer) => window.clearTimeout(timer));
     timersRef.current = [];
+    if (holdIntervalRef.current !== null) {
+      window.clearInterval(holdIntervalRef.current);
+      holdIntervalRef.current = null;
+    }
   }, []);
 
   const triggerRevealSequence = useCallback(() => {
@@ -195,6 +200,49 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
     timersRef.current.push(flashOffTimer, landingHitTimer, cardTimer, exitTimer, nextTimer);
   }, [onNext]);
 
+  const advanceProgress = useCallback((elapsedMs: number) => {
+    setShakeProgress((prev) => {
+      const next = Math.min(REQUIRED_SHAKE_MS, prev + elapsedMs);
+      shakeProgressRef.current = next;
+
+      if (next >= REQUIRED_SHAKE_MS && !shakeTriggered.current) {
+        shakeTriggered.current = true;
+        triggerRevealSequence();
+      }
+
+      return next;
+    });
+  }, [triggerRevealSequence]);
+
+  const startHoldProgress = useCallback(() => {
+    if (!isShakeArmed || shakeTriggered.current || holdIntervalRef.current !== null) return;
+
+    setHoldShake(true);
+    setShaking(true);
+
+    holdIntervalRef.current = window.setInterval(() => {
+      const now = Date.now();
+      if (now - lastClatterAtRef.current >= 380) {
+        playClatterSound();
+        lastClatterAtRef.current = now;
+      }
+      advanceProgress(100);
+    }, 100);
+  }, [advanceProgress, isShakeArmed]);
+
+  const stopHoldProgress = useCallback((resetProgress: boolean) => {
+    setHoldShake(false);
+    setShaking(false);
+    if (holdIntervalRef.current !== null) {
+      window.clearInterval(holdIntervalRef.current);
+      holdIntervalRef.current = null;
+    }
+    if (resetProgress && !shakeTriggered.current) {
+      setShakeProgress(0);
+      shakeProgressRef.current = 0;
+    }
+  }, []);
+
   const armShakeMode = useCallback(async () => {
     if (showCards || showReveal || shakeTriggered.current) return;
 
@@ -202,7 +250,12 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
     getAudioContext();
 
     if (typeof window === "undefined" || !("DeviceMotionEvent" in window)) {
-      setPermissionError("Thiết bị chưa hỗ trợ cảm biến lắc.");
+      setMotionReady(false);
+      setIsShakeArmed(true);
+      setPermissionError("Thiết bị chưa hỗ trợ cảm biến lắc. Bạn vẫn có thể chạm giữ hũ 5 giây.");
+      setShakeProgress(0);
+      shakeProgressRef.current = 0;
+      lastClatterAtRef.current = 0;
       return;
     }
 
@@ -210,11 +263,21 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
       try {
         const permission = await (DeviceMotionEvent as any).requestPermission();
         if (permission !== "granted") {
-          setPermissionError("Bạn cần cấp quyền chuyển động để gieo quẻ bằng cách lắc máy.");
+          setMotionReady(false);
+          setIsShakeArmed(true);
+          setPermissionError("Bạn chưa cấp quyền lắc. Vẫn có thể chạm giữ hũ 5 giây để gieo quẻ.");
+          setShakeProgress(0);
+          shakeProgressRef.current = 0;
+          lastClatterAtRef.current = 0;
           return;
         }
       } catch {
-        setPermissionError("Không thể bật cảm biến lắc. Hãy thử lại.");
+        setMotionReady(false);
+        setIsShakeArmed(true);
+        setPermissionError("Không thể bật cảm biến lắc. Bạn vẫn có thể chạm giữ hũ 5 giây.");
+        setShakeProgress(0);
+        shakeProgressRef.current = 0;
+        lastClatterAtRef.current = 0;
         return;
       }
     }
@@ -264,17 +327,7 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
           lastClatterAtRef.current = now;
         }
 
-        setShakeProgress((prev) => {
-          const next = Math.min(REQUIRED_SHAKE_MS, prev + timeDiff);
-          shakeProgressRef.current = next;
-
-          if (next >= REQUIRED_SHAKE_MS && !shakeTriggered.current) {
-            shakeTriggered.current = true;
-            triggerRevealSequence();
-          }
-
-          return next;
-        });
+        advanceProgress(timeDiff);
       } else {
         setShaking(false);
         setShakeProgress((prev) => {
@@ -292,7 +345,7 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
 
     window.addEventListener("devicemotion", handleMotion);
     return () => window.removeEventListener("devicemotion", handleMotion);
-  }, [motionReady, isShakeArmed, triggerRevealSequence]);
+  }, [advanceProgress, motionReady, isShakeArmed]);
 
   return (
     <motion.div
@@ -326,7 +379,7 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
             Hãy gửi gắm mong muốn, <span className="text-amber-300 font-extrabold">cầm chắc điện thoại</span> và lắc nhẹ để gieo quẻ.
           </p>
           <p className="text-primary text-base mt-2 font-semibold text-shadow-gold">
-            {isShakeArmed ? `Đang lắc: ${Math.round((shakeProgress / REQUIRED_SHAKE_MS) * 100)}%` : "Bật cảm biến rồi lắc liên tục 5 giây để khai quẻ"}
+            {isShakeArmed ? `Đang gieo quẻ: ${Math.round((shakeProgress / REQUIRED_SHAKE_MS) * 100)}%` : "Bật cảm biến rồi lắc liên tục 5 giây, hoặc chạm giữ hũ 5 giây"}
           </p>
           {permissionError && <p className="mt-2 text-sm font-semibold text-red-200">{permissionError}</p>}
         </div>
@@ -351,9 +404,10 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
               } : {}}
               transition={{ duration: 1.4, ease: "easeInOut" }}
               onClick={armShakeMode}
-              onPointerDown={() => setHoldShake(true)}
-              onPointerUp={() => setHoldShake(false)}
-              onPointerLeave={() => setHoldShake(false)}
+              onPointerDown={startHoldProgress}
+              onPointerUp={() => stopHoldProgress(true)}
+              onPointerLeave={() => stopHoldProgress(true)}
+              onPointerCancel={() => stopHoldProgress(true)}
               className="cursor-pointer"
               exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.4 } }}
             >
@@ -450,7 +504,7 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
               : !motionReady
                 ? "Bật cảm biến & bắt đầu lắc"
                 : isShakeArmed
-                  ? "Đã bật cảm biến - Lắc liên tục 5 giây"
+                  ? "Đã bật cảm biến - Lắc 5 giây hoặc giữ hũ 5 giây"
                   : "Chạm để bật lại cảm biến"}
           </span>
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent" style={{ backgroundSize: "200% 100%" }} />

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { Lantern, CornerLanterns, BookFairy } from "@/components/DecorativeElements";
+import { Lantern, CornerLanterns } from "@/components/DecorativeElements";
 
 const purposes = ["Để thư giãn", "Đầu tư bản thân", "Tăng tri thức", "Giải trí", "Tìm cảm hứng", "Phát triển sự nghiệp", "Hiểu bản thân", "Nuôi dạy con"];
 const genres = ["Văn học", "Kinh doanh", "Tâm lý", "Lịch sử", "Kỹ năng sống", "Khoa học", "Văn hóa", "Tâm linh", "Thiếu nhi", "Triết học", "Tiểu thuyết", "Thơ ca", "Hồi ký", "Công nghệ", "Nghệ thuật"];
@@ -53,12 +53,6 @@ const Screen1Selection = ({ onNext }: Props) => {
   const [length, setLength] = useState<string>("");
   const [showAllPurposes, setShowAllPurposes] = useState(false);
   const [showAllGenres, setShowAllGenres] = useState(false);
-  const [introDone, setIntroDone] = useState(false);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setIntroDone(true), 5200);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   const toggleGenre = (g: string) => {
     setSelectedGenres((prev) =>
@@ -71,35 +65,14 @@ const Screen1Selection = ({ onNext }: Props) => {
 
   return (
     <div className="relative min-h-[78vh]">
-      <AnimatePresence mode="wait">
-        {!introDone ? (
-          <motion.div
-            key="fairy-intro"
-            className="relative flex min-h-[78vh] items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-          >
-            <BookFairy mode="flyby" className="top-[42%] left-0" />
-            <motion.p
-              className="absolute top-[60%] text-sm tracking-wide text-cyan-100/90"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35, duration: 0.4 }}
-            >
-              Tien sach dan loi...
-            </motion.p>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="screen-content"
-            className="relative flex flex-col items-center gap-4"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            <CornerLanterns />
+      <motion.div
+        key="screen-content"
+        className="relative flex flex-col items-center gap-4"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        <CornerLanterns />
 
             {/* Title */}
             <div className="mt-4 flex items-center gap-3">
@@ -220,14 +193,12 @@ const Screen1Selection = ({ onNext }: Props) => {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
             </motion.button>
 
-            <div className="flex gap-2 text-primary/60 text-xs items-center">
-              <span>🌸</span>
-              <span className="font-light italic">Hãy chọn theo trực giác của bạn</span>
-              <span>🌸</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <div className="flex gap-2 text-primary/60 text-xs items-center">
+          <span>🌸</span>
+          <span className="font-light italic">Hãy chọn theo trực giác của bạn</span>
+          <span>🌸</span>
+        </div>
+      </motion.div>
     </div>
   );
 };

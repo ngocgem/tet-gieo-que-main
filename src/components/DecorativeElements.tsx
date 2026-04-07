@@ -237,7 +237,7 @@ export const BookFairy = ({
 };
 
 // CSS-only 3D Vietnamese bamboo fortune jar with sticks
-export const FortuneSticks = ({ glowing = false, shaking = false, revealSticks = false }: { glowing?: boolean; shaking?: boolean; revealSticks?: boolean }) => {
+export const FortuneSticks = ({ glowing = false, shaking = false, shakeIntensity = 0, revealSticks = false }: { glowing?: boolean; shaking?: boolean; shakeIntensity?: number; revealSticks?: boolean }) => {
   const sticks = [
     { id: 1, sway: 1.8, delay: 0.00, baseAngle: -12 },
     { id: 2, sway: 1.4, delay: 0.06, baseAngle: -8 },
@@ -250,6 +250,7 @@ export const FortuneSticks = ({ glowing = false, shaking = false, revealSticks =
   ];
 
   const moving = shaking || glowing || revealSticks;
+  const intensity = Math.min(1, Math.max(0, shakeIntensity));
 
   return (
     <motion.div
@@ -257,10 +258,14 @@ export const FortuneSticks = ({ glowing = false, shaking = false, revealSticks =
       initial={false}
       animate={
         shaking
-          ? { y: [0, -16, 5, -10, 3, 0], scale: [1, 1.02, 0.99, 1.015, 1], rotate: [0, -2, 1.8, -1.3, 0.7, 0] }
+          ? {
+              y: [0, -6 - 12 * intensity, 2 + 6 * intensity, -4 - 8 * intensity, 0],
+              scale: [1, 1 + 0.008 + 0.018 * intensity, 1 - 0.005, 1 + 0.008 + 0.012 * intensity, 1],
+              rotate: [0, -0.8 - 2.6 * intensity, 0.6 + 2.2 * intensity, -0.5 - 1.6 * intensity, 0],
+            }
           : { y: 0, scale: 1, rotate: 0 }
       }
-      transition={{ duration: 0.42, repeat: shaking ? Infinity : 0, ease: 'easeInOut' }}
+      transition={{ duration: Math.max(0.22, 0.44 - intensity * 0.18), repeat: shaking ? Infinity : 0, ease: 'easeInOut' }}
     >
       {/* Dark interior visible at jar mouth opening */}
       <div className="jar-interior" />
@@ -277,14 +282,14 @@ export const FortuneSticks = ({ glowing = false, shaking = false, revealSticks =
                     y: [0, -5 * (stick.sway / 2), 2, -3, 0],
                     rotate: [
                       stick.baseAngle,
-                      stick.baseAngle + (stick.id % 2 === 0 ? -stick.sway * 0.6 : stick.sway * 0.6),
+                      stick.baseAngle + (stick.id % 2 === 0 ? -(stick.sway * (0.55 + intensity * 0.95)) : stick.sway * (0.55 + intensity * 0.95)),
                       stick.baseAngle,
                     ],
                   }
                 : { y: 0, rotate: stick.baseAngle }
             }
             transition={{
-              duration: 0.38,
+              duration: Math.max(0.2, 0.39 - intensity * 0.13),
               repeat: moving ? Infinity : 0,
               delay: stick.delay,
               ease: 'easeInOut',

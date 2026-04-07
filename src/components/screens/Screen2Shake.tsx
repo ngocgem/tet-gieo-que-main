@@ -11,6 +11,8 @@ interface Props {
 const REQUIRED_SHAKE_MS = 5000;
 const SHAKE_THRESHOLD = 24;
 
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
 let sharedCtx: AudioContext | null = null;
 
 const getAudioContext = (): AudioContext | null => {
@@ -27,34 +29,43 @@ const getAudioContext = (): AudioContext | null => {
   }
 };
 
-const playClatterSound = () => {
+const playClatterSound = (intensity = 0.5) => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
 
-    const strikes = 12;
+    const safeIntensity = clamp(intensity, 0, 1);
+    const strikes = 8 + Math.round(safeIntensity * 8);
     for (let i = 0; i < strikes; i++) {
       const osc = ctx.createOscillator();
+      const overtone = ctx.createOscillator();
       const gain = ctx.createGain();
       const filter = ctx.createBiquadFilter();
 
       filter.type = "bandpass";
-      filter.frequency.value = 800 + Math.random() * 2000;
-      filter.Q.value = 2 + Math.random() * 5;
+      filter.frequency.value = 700 + Math.random() * (2200 + safeIntensity * 900);
+      filter.Q.value = 2 + Math.random() * (5 + safeIntensity * 2);
 
       osc.type = "square";
-      osc.frequency.value = 200 + Math.random() * 600;
+      osc.frequency.value = 180 + Math.random() * (560 + safeIntensity * 140);
+      overtone.type = "triangle";
+      overtone.frequency.value = osc.frequency.value * (1.7 + Math.random() * 0.5);
 
-      const startTime = ctx.currentTime + i * 0.06 + Math.random() * 0.03;
-      gain.gain.setValueAtTime(0.08 + Math.random() * 0.06, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.04 + Math.random() * 0.03);
+      const startTime = ctx.currentTime + i * (0.045 - safeIntensity * 0.012) + Math.random() * 0.025;
+      const peak = 0.05 + safeIntensity * 0.08 + Math.random() * 0.03;
+      gain.gain.setValueAtTime(0.0001, startTime);
+      gain.gain.exponentialRampToValueAtTime(peak, startTime + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.05 + Math.random() * 0.035);
 
       osc.connect(filter);
+      overtone.connect(filter);
       filter.connect(gain);
       gain.connect(ctx.destination);
 
       osc.start(startTime);
-      osc.stop(startTime + 0.08);
+      overtone.start(startTime);
+      osc.stop(startTime + 0.09);
+      overtone.stop(startTime + 0.07);
     }
   } catch {
     // Silent fallback when audio is unavailable.
@@ -103,29 +114,43 @@ const playRevealSuspenseSound = () => {
   }
 };
 
-const playLandingImpactSound = () => {
+const playLandingImpactSound = (intensity = 0.85) => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
 
+    const safeIntensity = clamp(intensity, 0, 1);
+
     for (let i = 0; i < 3; i++) {
       const hit = ctx.createOscillator();
+      const boom = ctx.createOscillator();
       const hitGain = ctx.createGain();
+      const boomGain = ctx.createGain();
       const hitFilter = ctx.createBiquadFilter();
       hit.type = "triangle";
-      hit.frequency.value = 130 - i * 12;
+      hit.frequency.value = 135 - i * 11;
+      boom.type = "sine";
+      boom.frequency.setValueAtTime(78 - i * 6, ctx.currentTime);
+      boom.frequency.exponentialRampToValueAtTime(44 - i * 2, ctx.currentTime + 0.2);
       hitFilter.type = "bandpass";
-      hitFilter.frequency.value = 320 + i * 60;
-      hitFilter.Q.value = 2.2;
+      hitFilter.frequency.value = 280 + i * 80;
+      hitFilter.Q.value = 2.4;
       const t = ctx.currentTime + i * 0.075;
       hitGain.gain.setValueAtTime(0.0001, t);
-      hitGain.gain.exponentialRampToValueAtTime(0.09, t + 0.015);
-      hitGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      hitGain.gain.exponentialRampToValueAtTime(0.085 + safeIntensity * 0.07, t + 0.012);
+      hitGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.19);
+      boomGain.gain.setValueAtTime(0.0001, t);
+      boomGain.gain.exponentialRampToValueAtTime(0.05 + safeIntensity * 0.05, t + 0.02);
+      boomGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
       hit.connect(hitFilter);
       hitFilter.connect(hitGain);
       hitGain.connect(ctx.destination);
+      boom.connect(boomGain);
+      boomGain.connect(ctx.destination);
       hit.start(t);
+      boom.start(t);
       hit.stop(t + 0.2);
+      boom.stop(t + 0.26);
     }
   } catch {
     // Silent fallback when audio is unavailable.
@@ -142,11 +167,15 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
   const [sensorButtonHidden, setSensorButtonHidden] = useState(false);
   const [isShakeArmed, setIsShakeArmed] = useState(false);
   const [shakeProgress, setShakeProgress] = useState(0);
+  const [shakeIntensity, setShakeIntensity] = useState(0);
+  const [shakeTilt, setShakeTilt] = useState(0);
+  const [shakeLift, setShakeLift] = useState(0);
 
   const shakeTriggered = useRef(false);
   const timersRef = useRef<number[]>([]);
   const shakeProgressRef = useRef(0);
   const lastClatterAtRef = useRef(0);
+  const shakeIntensityRef = useRef(0);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -156,6 +185,9 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
   const triggerRevealSequence = useCallback(() => {
     setIsShakeArmed(false);
     setShaking(false);
+    setShakeIntensity(0);
+    setShakeTilt(0);
+    setShakeLift(0);
     playRevealSuspenseSound();
     setRevealFlash(true);
     setShowReveal(true);
@@ -165,7 +197,7 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
     }, 220);
 
     const landingHitTimer = window.setTimeout(() => {
-      playLandingImpactSound();
+      playLandingImpactSound(0.95);
     }, 1500);
 
     const cardTimer = window.setTimeout(() => {
@@ -229,6 +261,10 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
     setShakeProgress(0);
     shakeProgressRef.current = 0;
     lastClatterAtRef.current = 0;
+    shakeIntensityRef.current = 0;
+    setShakeIntensity(0);
+    setShakeTilt(0);
+    setShakeLift(0);
   }, [showCards, showReveal]);
 
   useEffect(() => {
@@ -261,16 +297,27 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
       if (speed > SHAKE_THRESHOLD) {
         setShaking(true);
 
+        const rawIntensity = clamp((speed - SHAKE_THRESHOLD) / 110, 0, 1);
+        const smoothIntensity = shakeIntensityRef.current * 0.62 + rawIntensity * 0.38;
+        shakeIntensityRef.current = smoothIntensity;
+        setShakeIntensity(smoothIntensity);
+        setShakeTilt(clamp(acc.x * 2.6, -16, 16) * (0.35 + smoothIntensity * 0.65));
+        setShakeLift(clamp(-acc.y * 1.8, -14, 7) * (0.25 + smoothIntensity * 0.75));
+
         const ratio = shakeProgressRef.current / REQUIRED_SHAKE_MS;
-        const clatterInterval = Math.max(300, 760 - ratio * 420);
+        const clatterInterval = Math.max(180, 760 - ratio * 420 - smoothIntensity * 300);
         if (now - lastClatterAtRef.current >= clatterInterval) {
-          playClatterSound();
+          playClatterSound(smoothIntensity);
           lastClatterAtRef.current = now;
         }
 
-        advanceProgress(timeDiff);
+        advanceProgress(timeDiff * (0.72 + smoothIntensity * 0.72));
       } else {
         setShaking(false);
+        shakeIntensityRef.current *= 0.84;
+        setShakeIntensity(shakeIntensityRef.current);
+        setShakeTilt((prev) => prev * 0.72);
+        setShakeLift((prev) => prev * 0.72);
         setShakeProgress((prev) => {
           const next = Math.max(0, prev - timeDiff * 1.15);
           shakeProgressRef.current = next;
@@ -310,7 +357,7 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
       <CornerLanterns />
       <BookFairy
         mode="jarOrbit"
-        active={shaking}
+        active={shaking || shakeIntensity > 0.08}
         className="left-1/2 top-[56%] -translate-x-1/2 -translate-y-1/2"
       />
       <CloudDecor className="top-0 left-0" />
@@ -351,15 +398,16 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
         <AnimatePresence>
           {!showCards && (
             <motion.div
-              animate={shaking ? {
-                rotate: [0, -18, 15, -12, 9, -5, 2, 0],
-                y: [0, -8, 5, -3, 3, 0],
-              } : {}}
-              transition={{ duration: 1.4, ease: "easeInOut" }}
+              animate={{
+                rotate: shakeTilt,
+                y: shakeLift,
+                scale: 1 + shakeIntensity * 0.025,
+              }}
+              transition={{ type: "spring", stiffness: 180, damping: 16, mass: 0.45 }}
               className="cursor-default"
               exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.4 } }}
             >
-              <FortuneSticks shaking={shaking} revealSticks={showReveal} />
+              <FortuneSticks shaking={shaking} shakeIntensity={shakeIntensity} revealSticks={showReveal} />
             </motion.div>
           )}
         </AnimatePresence>

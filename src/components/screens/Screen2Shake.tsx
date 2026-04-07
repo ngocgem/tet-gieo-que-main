@@ -139,6 +139,7 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
   const [isExiting, setIsExiting] = useState(false);
   const [revealFlash, setRevealFlash] = useState(false);
   const [motionReady, setMotionReady] = useState(false);
+  const [sensorButtonHidden, setSensorButtonHidden] = useState(false);
   const [isShakeArmed, setIsShakeArmed] = useState(false);
   const [shakeProgress, setShakeProgress] = useState(0);
 
@@ -196,11 +197,13 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
   const armShakeMode = useCallback(async () => {
     if (showCards || showReveal || shakeTriggered.current) return;
 
+    setSensorButtonHidden(true);
     getAudioContext();
 
     if (typeof window === "undefined" || !("DeviceMotionEvent" in window)) {
       setMotionReady(false);
       setIsShakeArmed(false);
+      setSensorButtonHidden(false);
       return;
     }
 
@@ -210,11 +213,13 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
         if (permission !== "granted") {
           setMotionReady(false);
           setIsShakeArmed(false);
+          setSensorButtonHidden(false);
           return;
         }
       } catch {
         setMotionReady(false);
         setIsShakeArmed(false);
+        setSensorButtonHidden(false);
         return;
       }
     }
@@ -227,9 +232,8 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
   }, [showCards, showReveal]);
 
   useEffect(() => {
-    armShakeMode();
     return () => clearTimers();
-  }, [armShakeMode, clearTimers]);
+  }, [clearTimers]);
 
   useEffect(() => {
     if (!motionReady) return;
@@ -338,15 +342,6 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
             <p className="mt-2 text-primary text-base font-semibold text-shadow-gold">{shakePercent}%</p>
           </div>
 
-          {!motionReady && (
-            <motion.button
-              onClick={armShakeMode}
-              whileTap={{ scale: 0.96 }}
-              className="mt-4 rounded-xl bg-red-600/75 px-6 py-2.5 text-sm font-semibold text-yellow-100 shadow-lg hover:bg-red-600/85"
-            >
-              Bật cảm biến để lắc
-            </motion.button>
-          )}
         </div>
       )}
 
@@ -451,6 +446,18 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
           )}
         </AnimatePresence>
       </div>
+
+      {!showCards && !motionReady && !sensorButtonHidden && (
+        <motion.button
+          onClick={armShakeMode}
+          whileTap={{ scale: 0.96 }}
+          animate={{ y: [0, -4, 0], boxShadow: ["0 8px 18px rgba(0,0,0,0.35)", "0 12px 26px rgba(250,204,21,0.45)", "0 8px 18px rgba(0,0,0,0.35)"] }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+          className="mt-3 rounded-xl bg-red-600/85 px-6 py-2.5 text-sm font-semibold text-yellow-100 shadow-lg hover:bg-red-600/95"
+        >
+          Bật cảm biến trước khi lắc
+        </motion.button>
+      )}
     </motion.div>
   );
 };

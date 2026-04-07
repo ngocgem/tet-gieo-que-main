@@ -27,7 +27,7 @@ const Screen3Loading = ({ onNext }: Props) => {
           animate={{ opacity: [0.45, 1, 0.45] }}
           transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
         >
-          Đang kết nối duyên lành... Hãy chuẩn bị lắc máy nhé!
+          Đang kết nối duyên lành.. Hãy chuẩn bị lắc máy nhé.
         </motion.p>
 
         <div className="w-[78%] max-w-sm mt-5">

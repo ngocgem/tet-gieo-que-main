@@ -9,7 +9,7 @@ interface Props {
 }
 
 const REQUIRED_SHAKE_MS = 5000;
-const SHAKE_THRESHOLD = 28;
+const SHAKE_THRESHOLD = 24;
 
 let sharedCtx: AudioContext | null = null;
 
@@ -257,24 +257,18 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
       if (speed > SHAKE_THRESHOLD) {
         setShaking(true);
 
-        const ratio = shakeProgressRef.current / REQUIRED_SHAKE_MS;
-        const clatterInterval = Math.max(300, 760 - ratio * 420);
-        if (now - lastClatterAtRef.current >= clatterInterval) {
-          playClatterSound();
-          lastClatterAtRef.current = now;
-        }
-
-        // Ensure we never get stuck: one strong shake triggers reveal flow.
         if (!shakeTriggered.current) {
           shakeTriggered.current = true;
           setShakeProgress(REQUIRED_SHAKE_MS);
           shakeProgressRef.current = REQUIRED_SHAKE_MS;
           triggerRevealSequence();
-          lastX = acc.x;
-          lastY = acc.y;
-          lastZ = acc.z;
-          lastTime = now;
-          return;
+        }
+
+        const ratio = shakeProgressRef.current / REQUIRED_SHAKE_MS;
+        const clatterInterval = Math.max(300, 760 - ratio * 420);
+        if (now - lastClatterAtRef.current >= clatterInterval) {
+          playClatterSound();
+          lastClatterAtRef.current = now;
         }
 
         advanceProgress(timeDiff);
@@ -295,7 +289,7 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
 
     window.addEventListener("devicemotion", handleMotion);
     return () => window.removeEventListener("devicemotion", handleMotion);
-  }, [advanceProgress, motionReady, isShakeArmed]);
+  }, [advanceProgress, motionReady, isShakeArmed, triggerRevealSequence]);
 
   const shakePercent = Math.round((shakeProgress / REQUIRED_SHAKE_MS) * 100);
 

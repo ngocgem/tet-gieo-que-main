@@ -1,95 +1,70 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { FortuneSticks, GoldParticles, CornerLanterns } from "@/components/DecorativeElements";
+import { CornerLanterns, GoldParticles } from "@/components/DecorativeElements";
+import { Hand, Smartphone } from "lucide-react";
 
 interface Props {
   onNext: () => void;
 }
 
 const Screen3Loading = ({ onNext }: Props) => {
-  const [progress, setProgress] = useState(0);
-
   useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => onNext(), 500);
-          return 100;
-        }
-        return prev + 2;
-      });
-    }, 60);
-    return () => clearInterval(interval);
+    const timeoutId = setTimeout(() => {
+      onNext();
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
   }, [onNext]);
 
   return (
-    <div className="flex flex-col items-center gap-6 pt-8 relative">
+    <div className="flex flex-col items-center gap-6 pt-8 pb-4 relative min-h-[70vh]">
       <CornerLanterns />
       
-      <div className="text-center">
-        <motion.h2 
-          className="font-display text-2xl font-extrabold gold-text text-shadow-gold mb-3 tracking-wide"
-          animate={{ opacity: [0.7, 1, 0.7] }}
-          transition={{ duration: 2, repeat: Infinity }}
+      <div className="text-center px-4 mt-6">
+        <motion.p
+          className="text-tet-cream-text text-lg leading-relaxed font-light"
+          animate={{ opacity: [0.45, 1, 0.45] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
         >
-          ĐANG GỌI DUYÊN...
-        </motion.h2>
-        <p className="text-tet-cream-text text-sm leading-relaxed font-light px-4">
-          Duyên lành đang tìm đến bạn
-        </p>
-        <p className="text-tet-cream-text/60 text-xs mt-1 italic">
-          Lòng thành thì duyên sẽ đến 🙏
-        </p>
+          Đang kết nối duyên lành... Hãy chuẩn bị lắc máy nhé!
+        </motion.p>
       </div>
 
-      <div className="relative my-4">
+      <div className="relative my-8">
         <GoldParticles />
         <motion.div
-          animate={{ y: [0, -3, 0, 2, 0] }}
-          transition={{ duration: 0.8, repeat: Infinity }}
+          className="relative"
+          animate={{ x: [-18, 18, -18] }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
         >
-          <FortuneSticks glowing />
+          <motion.div
+            className="w-16 h-24 rounded-2xl bg-primary/15 border border-primary/40 backdrop-blur-sm flex items-center justify-center"
+            animate={{ rotate: [-5, 5, -5] }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Smartphone className="w-8 h-8 text-primary" />
+          </motion.div>
+          <motion.div
+            className="absolute -left-8 top-8 text-primary"
+            animate={{ x: [-6, 6, -6], y: [0, -2, 0] }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Hand className="w-6 h-6" />
+          </motion.div>
         </motion.div>
       </div>
 
-      {/* Glowing Progress bar */}
-      <div className="w-64 mx-auto">
-        <div className="h-2.5 bg-muted rounded-full overflow-hidden border border-primary/30 relative">
-          <motion.div
-            className="h-full rounded-full relative"
-            style={{ 
-              width: `${progress}%`,
-              background: 'linear-gradient(90deg, hsl(51, 100%, 50%), hsl(43, 96%, 42%), hsl(51, 100%, 55%))',
-            }}
-            transition={{ duration: 0.1 }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
-          </motion.div>
-          {/* Glow on progress bar */}
-          <div 
-            className="absolute top-0 h-full rounded-full transition-all duration-100"
-            style={{ 
-              width: `${progress}%`,
-              boxShadow: '0 0 10px hsl(51, 100%, 50% / 0.5), 0 0 20px hsl(51, 100%, 50% / 0.3)',
-            }} 
-          />
-        </div>
-        <p className="text-primary text-sm text-center mt-2 font-bold font-display">{progress}%</p>
-      </div>
+      <p className="text-tet-cream-text/60 text-xs italic text-center px-6">
+        Mẹo: Lắc nhẹ và đều để quẻ hiện nhanh hơn.
+      </p>
 
-      <div className="flex gap-2 text-primary">
-        {"✦ ✦ ✦ ✦ ✦".split(" ").map((s, i) => (
-          <motion.span 
-            key={i} 
-            className="text-sm"
-            animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.2, 0.8] }}
-            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.25 }}
-          >
-            {s}
-          </motion.span>
-        ))}
-      </div>
+      <button
+        type="button"
+        onClick={onNext}
+        className="mt-auto text-tet-cream-text/80 underline underline-offset-4 text-sm hover:text-primary transition-colors"
+      >
+        Bỏ qua
+      </button>
     </div>
   );
 };

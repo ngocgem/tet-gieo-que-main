@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FallingPetals, FloatingClouds, GoldBorderTop, GoldBorderBottom } from "@/components/DecorativeElements";
 import Screen1Selection from "@/components/screens/Screen1Selection";
 import Screen2Shake from "@/components/screens/Screen2Shake";
+import Screen3Loading from "@/components/screens/Screen3Loading";
 
 import Screen4Results from "@/components/screens/Screen4Results";
 import Screen5Detail from "@/components/screens/Screen5Detail";
@@ -11,7 +12,7 @@ import bookChiPheo from "@/assets/book-chi-pheo.jpg";
 import bookHieuVeTraiTim from "@/assets/book-hieu-ve-trai-tim.jpg";
 import bookNhaGiaKim from "@/assets/book-nha-gia-kim.jpg";
 
-export type AppScreen = 1 | 2 | 4 | 5;
+export type AppScreen = 1 | 2 | 3 | 4 | 5;
 
 export interface BookData {
   title: string;
@@ -65,7 +66,12 @@ const Index = () => {
           <AnimatePresence mode="wait">
             {currentScreen === 1 && (
               <motion.div key="s1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.5 }}>
-                <Screen1Selection onNext={() => goToScreen(2)} />
+                <Screen1Selection onNext={() => goToScreen(3)} />
+              </motion.div>
+            )}
+            {currentScreen === 3 && (
+              <motion.div key="s3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4 }}>
+                <Screen3Loading onNext={() => goToScreen(2)} />
               </motion.div>
             )}
             {currentScreen === 2 && (

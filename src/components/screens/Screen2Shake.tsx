@@ -264,6 +264,19 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
           lastClatterAtRef.current = now;
         }
 
+        // Ensure we never get stuck: one strong shake triggers reveal flow.
+        if (!shakeTriggered.current) {
+          shakeTriggered.current = true;
+          setShakeProgress(REQUIRED_SHAKE_MS);
+          shakeProgressRef.current = REQUIRED_SHAKE_MS;
+          triggerRevealSequence();
+          lastX = acc.x;
+          lastY = acc.y;
+          lastZ = acc.z;
+          lastTime = now;
+          return;
+        }
+
         advanceProgress(timeDiff);
       } else {
         setShaking(false);

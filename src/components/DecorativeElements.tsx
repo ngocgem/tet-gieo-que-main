@@ -259,13 +259,13 @@ export const FortuneSticks = ({ glowing = false, shaking = false, shakeIntensity
       animate={
         shaking
           ? {
-              y: [0, -6 - 12 * intensity, 2 + 6 * intensity, -4 - 8 * intensity, 0],
-              scale: [1, 1 + 0.008 + 0.018 * intensity, 1 - 0.005, 1 + 0.008 + 0.012 * intensity, 1],
-              rotate: [0, -0.8 - 2.6 * intensity, 0.6 + 2.2 * intensity, -0.5 - 1.6 * intensity, 0],
+              y: [0, -4 - 7 * intensity, 1 + 3 * intensity, -2 - 4.5 * intensity, 0],
+              scale: [1, 1 + 0.006 + 0.012 * intensity, 1 - 0.0035, 1 + 0.006 + 0.008 * intensity, 1],
+              rotate: [0, -0.5 - 1.6 * intensity, 0.35 + 1.3 * intensity, -0.3 - 1.05 * intensity, 0],
             }
           : { y: 0, scale: 1, rotate: 0 }
       }
-      transition={{ duration: Math.max(0.22, 0.44 - intensity * 0.18), repeat: shaking ? Infinity : 0, ease: 'easeInOut' }}
+      transition={{ duration: Math.max(0.26, 0.46 - intensity * 0.12), repeat: shaking ? Infinity : 0, ease: 'easeInOut' }}
     >
       {/* Dark interior visible at jar mouth opening */}
       <div className="jar-interior" />
@@ -282,14 +282,14 @@ export const FortuneSticks = ({ glowing = false, shaking = false, shakeIntensity
                     y: [0, -5 * (stick.sway / 2), 2, -3, 0],
                     rotate: [
                       stick.baseAngle,
-                      stick.baseAngle + (stick.id % 2 === 0 ? -(stick.sway * (0.55 + intensity * 0.95)) : stick.sway * (0.55 + intensity * 0.95)),
+                      stick.baseAngle + (stick.id % 2 === 0 ? -(stick.sway * (0.5 + intensity * 0.62)) : stick.sway * (0.5 + intensity * 0.62)),
                       stick.baseAngle,
                     ],
                   }
                 : { y: 0, rotate: stick.baseAngle }
             }
             transition={{
-              duration: Math.max(0.2, 0.39 - intensity * 0.13),
+              duration: Math.max(0.24, 0.4 - intensity * 0.08),
               repeat: moving ? Infinity : 0,
               delay: stick.delay,
               ease: 'easeInOut',

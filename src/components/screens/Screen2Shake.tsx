@@ -8,7 +8,7 @@ interface Props {
   onBack: () => void;
 }
 
-const REQUIRED_SHAKE_MS = 5000;
+const REQUIRED_SHAKE_MS = 7000;
 const SHAKE_THRESHOLD = 24;
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -35,7 +35,7 @@ const playClatterSound = (intensity = 0.5) => {
     if (!ctx) return;
 
     const safeIntensity = clamp(intensity, 0, 1);
-    const strikes = 8 + Math.round(safeIntensity * 8);
+    const strikes = 6 + Math.round(safeIntensity * 5);
     for (let i = 0; i < strikes; i++) {
       const osc = ctx.createOscillator();
       const overtone = ctx.createOscillator();
@@ -51,8 +51,8 @@ const playClatterSound = (intensity = 0.5) => {
       overtone.type = "triangle";
       overtone.frequency.value = osc.frequency.value * (1.7 + Math.random() * 0.5);
 
-      const startTime = ctx.currentTime + i * (0.045 - safeIntensity * 0.012) + Math.random() * 0.025;
-      const peak = 0.05 + safeIntensity * 0.08 + Math.random() * 0.03;
+      const startTime = ctx.currentTime + i * (0.052 - safeIntensity * 0.008) + Math.random() * 0.022;
+      const peak = 0.04 + safeIntensity * 0.05 + Math.random() * 0.02;
       gain.gain.setValueAtTime(0.0001, startTime);
       gain.gain.exponentialRampToValueAtTime(peak, startTime + 0.008);
       gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.05 + Math.random() * 0.035);
@@ -121,6 +121,23 @@ const playLandingImpactSound = (intensity = 0.85) => {
 
     const safeIntensity = clamp(intensity, 0, 1);
 
+    // Sparkle pre-hit for a playful suspense cue.
+    for (let i = 0; i < 3; i++) {
+      const sparkle = ctx.createOscillator();
+      const sparkleGain = ctx.createGain();
+      const t = ctx.currentTime + i * 0.055;
+      sparkle.type = "sine";
+      sparkle.frequency.setValueAtTime(720 + i * 120, t);
+      sparkle.frequency.exponentialRampToValueAtTime(940 + i * 150, t + 0.07);
+      sparkleGain.gain.setValueAtTime(0.0001, t);
+      sparkleGain.gain.exponentialRampToValueAtTime(0.022 + safeIntensity * 0.02, t + 0.02);
+      sparkleGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.085);
+      sparkle.connect(sparkleGain);
+      sparkleGain.connect(ctx.destination);
+      sparkle.start(t);
+      sparkle.stop(t + 0.09);
+    }
+
     for (let i = 0; i < 3; i++) {
       const hit = ctx.createOscillator();
       const boom = ctx.createOscillator();
@@ -128,20 +145,20 @@ const playLandingImpactSound = (intensity = 0.85) => {
       const boomGain = ctx.createGain();
       const hitFilter = ctx.createBiquadFilter();
       hit.type = "triangle";
-      hit.frequency.value = 135 - i * 11;
+      hit.frequency.value = 150 - i * 10;
       boom.type = "sine";
-      boom.frequency.setValueAtTime(78 - i * 6, ctx.currentTime);
-      boom.frequency.exponentialRampToValueAtTime(44 - i * 2, ctx.currentTime + 0.2);
+      boom.frequency.setValueAtTime(72 - i * 5, ctx.currentTime);
+      boom.frequency.exponentialRampToValueAtTime(48 - i * 2, ctx.currentTime + 0.18);
       hitFilter.type = "bandpass";
       hitFilter.frequency.value = 280 + i * 80;
       hitFilter.Q.value = 2.4;
-      const t = ctx.currentTime + i * 0.075;
+      const t = ctx.currentTime + 0.16 + i * 0.088;
       hitGain.gain.setValueAtTime(0.0001, t);
-      hitGain.gain.exponentialRampToValueAtTime(0.085 + safeIntensity * 0.07, t + 0.012);
-      hitGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.19);
+      hitGain.gain.exponentialRampToValueAtTime(0.065 + safeIntensity * 0.045, t + 0.012);
+      hitGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
       boomGain.gain.setValueAtTime(0.0001, t);
-      boomGain.gain.exponentialRampToValueAtTime(0.05 + safeIntensity * 0.05, t + 0.02);
-      boomGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+      boomGain.gain.exponentialRampToValueAtTime(0.028 + safeIntensity * 0.03, t + 0.018);
+      boomGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
       hit.connect(hitFilter);
       hitFilter.connect(hitGain);
       hitGain.connect(ctx.destination);
@@ -149,8 +166,8 @@ const playLandingImpactSound = (intensity = 0.85) => {
       boomGain.connect(ctx.destination);
       hit.start(t);
       boom.start(t);
-      hit.stop(t + 0.2);
-      boom.stop(t + 0.26);
+      hit.stop(t + 0.17);
+      boom.stop(t + 0.21);
     }
   } catch {
     // Silent fallback when audio is unavailable.
@@ -297,21 +314,21 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
       if (speed > SHAKE_THRESHOLD) {
         setShaking(true);
 
-        const rawIntensity = clamp((speed - SHAKE_THRESHOLD) / 110, 0, 1);
-        const smoothIntensity = shakeIntensityRef.current * 0.62 + rawIntensity * 0.38;
+        const rawIntensity = clamp((speed - SHAKE_THRESHOLD) / 165, 0, 1);
+        const smoothIntensity = shakeIntensityRef.current * 0.72 + rawIntensity * 0.28;
         shakeIntensityRef.current = smoothIntensity;
         setShakeIntensity(smoothIntensity);
-        setShakeTilt(clamp(acc.x * 2.6, -16, 16) * (0.35 + smoothIntensity * 0.65));
-        setShakeLift(clamp(-acc.y * 1.8, -14, 7) * (0.25 + smoothIntensity * 0.75));
+        setShakeTilt(clamp(acc.x * 2, -12, 12) * (0.3 + smoothIntensity * 0.5));
+        setShakeLift(clamp(-acc.y * 1.2, -9, 5) * (0.2 + smoothIntensity * 0.45));
 
         const ratio = shakeProgressRef.current / REQUIRED_SHAKE_MS;
-        const clatterInterval = Math.max(180, 760 - ratio * 420 - smoothIntensity * 300);
+        const clatterInterval = Math.max(260, 790 - ratio * 340 - smoothIntensity * 170);
         if (now - lastClatterAtRef.current >= clatterInterval) {
           playClatterSound(smoothIntensity);
           lastClatterAtRef.current = now;
         }
 
-        advanceProgress(timeDiff * (0.72 + smoothIntensity * 0.72));
+        advanceProgress(timeDiff * (0.8 + smoothIntensity * 0.34));
       } else {
         setShaking(false);
         shakeIntensityRef.current *= 0.84;

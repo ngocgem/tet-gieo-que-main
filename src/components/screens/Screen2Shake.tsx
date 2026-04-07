@@ -330,6 +330,16 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
             </div>
             <p className="mt-2 text-primary text-base font-semibold text-shadow-gold">{shakePercent}%</p>
           </div>
+
+          {!motionReady && (
+            <motion.button
+              onClick={armShakeMode}
+              whileTap={{ scale: 0.96 }}
+              className="mt-4 rounded-xl bg-red-600/75 px-6 py-2.5 text-sm font-semibold text-yellow-100 shadow-lg hover:bg-red-600/85"
+            >
+              Bật cảm biến để lắc
+            </motion.button>
+          )}
         </div>
       )}
 
@@ -434,16 +444,6 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
           )}
         </AnimatePresence>
       </div>
-
-      {!showCards && (
-        <motion.button
-          onClick={armShakeMode}
-          whileTap={{ scale: 0.96 }}
-          className="mt-3 rounded-xl bg-red-600/75 px-6 py-2.5 text-sm font-semibold text-yellow-100 shadow-lg hover:bg-red-600/85"
-        >
-          Bật cảm biến để lắc
-        </motion.button>
-      )}
     </motion.div>
   );
 };

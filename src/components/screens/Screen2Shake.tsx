@@ -261,13 +261,6 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
       if (speed > SHAKE_THRESHOLD) {
         setShaking(true);
 
-        if (!shakeTriggered.current) {
-          shakeTriggered.current = true;
-          setShakeProgress(REQUIRED_SHAKE_MS);
-          shakeProgressRef.current = REQUIRED_SHAKE_MS;
-          triggerRevealSequence();
-        }
-
         const ratio = shakeProgressRef.current / REQUIRED_SHAKE_MS;
         const clatterInterval = Math.max(300, 760 - ratio * 420);
         if (now - lastClatterAtRef.current >= clatterInterval) {
@@ -293,7 +286,7 @@ const Screen2Shake = ({ onNext, onBack }: Props) => {
 
     window.addEventListener("devicemotion", handleMotion);
     return () => window.removeEventListener("devicemotion", handleMotion);
-  }, [advanceProgress, motionReady, isShakeArmed, triggerRevealSequence]);
+  }, [advanceProgress, motionReady, isShakeArmed]);
 
   const shakePercent = Math.round((shakeProgress / REQUIRED_SHAKE_MS) * 100);
 
